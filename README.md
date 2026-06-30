@@ -6,7 +6,11 @@ Tools:
   - Mengirim data ke server
   - Menampilkan data ke LCD
   - Menerima data sensor melalui serial
+* Tampilan ESP8266: 
+---
+<img width="876" height="712" alt="ESP8266-2" src="https://github.com/user-attachments/assets/d470c484-f369-4269-abf4-b1edf448ac4c" />
 
+---
 * Board: 
   - NodeMCU ESP8266
   - Wemos D1 Mini
