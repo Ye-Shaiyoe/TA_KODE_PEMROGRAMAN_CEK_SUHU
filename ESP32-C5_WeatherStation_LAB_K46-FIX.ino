@@ -1,27 +1,25 @@
-
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
-// ── Pin Definitions ESP32-C5 ─────────────────────────────────
-#define SDA_PIN   7
-#define SCL_PIN   6
-#define RX1_PIN   5   // coba balik: tadinya 4
-#define TX1_PIN   4   // coba balik: tadinya 5
+// Koneksi
+#define SDA_PIN   8
+#define SCL_PIN   9
+#define RX1_PIN   4
+#define TX1_PIN   5
 
-// ── Kredensial & Server ──────────────────────────────────────
 const char* ssid     = "MAIN MASS";
 const char* password = "massaK46";
 const char* host     = "percobaanta1hares.my.id";
-const String path    = "https://percobaanta1hares.my.id/F01d3rD4t4k0D3L4BBPSUML/kirimdata/kirimdata6.php";
+const String path    = "/F01d3rD4t4k0D3L4BBPSUML/kirimdata/kirimdata6.php";
 
-// ── Hardware ─────────────────────────────────────────────────
+// Hardware 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 HardwareSerial sensorSerial(1);
 
-// ── Variabel Sensor ──────────────────────────────────────────
+// Variabel Sensor 
 char humid_s[5] = {0}, temp_s[5] = {0}, bar_s[5] = {0};
 char humid[12]  = {0}, temp[12]   = {0}, bar[12]   = {0};
 int  paket = 0, i = 0, tampil = 0;
@@ -30,13 +28,13 @@ int   satuan_rh, satuan_temp, satuan_bar;
 int   pol_rh, pol_temp, pol_bar;
 int   dp_rh, dp_temp, dp_bar;
 
-// ── Timer ────────────────────────────────────────────────────
+// Timer 
 unsigned long lastLCD    = 0;
 unsigned long lastReinit = 0;
 const unsigned long LCD_INTERVAL    = 500;      // update LCD tiap 500ms
-const unsigned long REINIT_INTERVAL = 300000;   // reinit LCD tiap 5 menit
+const unsigned long REINIT_INTERVAL = 60000;    // reinit LCD tiap 1 menit (lebih agresif)
 
-// ── Custom LCD Characters ────────────────────────────────────
+// Custom LCD Characters 
 byte wifiIcon[8]    = {0x1C, 0x0A, 0x11, 0x00, 0x04, 0x00, 0x04, 0x00};
 byte barLevel[6][8] = {
   {0},
@@ -47,6 +45,7 @@ byte barLevel[6][8] = {
   {0, 0, 0, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F}
 };
 
+// Init / Reinit LCD 
 void initLCD() {
   lcd.init();
   lcd.backlight();
@@ -55,6 +54,7 @@ void initLCD() {
   lcd.createChar(6, barLevel[0]);
 }
 
+// WiFi Connect Force 5GHz via BSSID Scan 
 void connectToWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("LAB_K46");
@@ -95,7 +95,7 @@ void connectToWiFi() {
   }
 }
 
-// ── Kirim Data ke Server ─────────────────────────────────────
+// Kirim Data ke Server 
 void sendToServer() {
   if (WiFi.status() != WL_CONNECTED) return;
 
@@ -120,7 +120,7 @@ void sendToServer() {
   http.end();
 }
 
-// ── Update LCD ───────────────────────────────────────────────
+// Update LCD 
 void updateLCD() {
   if (millis() - lastLCD < LCD_INTERVAL) return;
   lastLCD = millis();
@@ -148,7 +148,7 @@ void updateLCD() {
   }
 }
 
-// ── Parse Data Sensor MHB-382SD ─────────────────────────────
+// Parse Data Sensor MHB-382SD 
 void parseSensorData(char rc) {
   if (rc == 0x02) { i = 0; paket++; return; }
 
@@ -200,7 +200,7 @@ void parseSensorData(char rc) {
   }
 }
 
-// ── Setup ────────────────────────────────────────────────────
+// Setup 
 void setup() {
   Serial.begin(115200);
 
@@ -213,6 +213,13 @@ void setup() {
   lcd.setCursor(0, 1); lcd.print("Tunggu...       ");
 
   connectToWiFi();
+
+  // I2C bus kadang macet setelah WiFi scan 5GHz — reinit paksa di sini
+  Wire.end();
+  delay(50);
+  Wire.begin(SDA_PIN, SCL_PIN);
+  delay(50);
+  initLCD();
   lcd.clear();
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -223,9 +230,9 @@ void setup() {
   }
 }
 
-// ── Loop ─────────────────────────────────────────────────────
+// Loop 
 void loop() {
-  // Reinit LCD tiap 5 menit untuk antisipasi glitch/blank
+  // Reinit LCD tiap 1 menit untuk antisipasi I2C hang/glitch
   if (millis() - lastReinit >= REINIT_INTERVAL) {
     lastReinit = millis();
     initLCD();
